@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">tdspruebasfirebase</string>
+    <string name="title_activity_home">HomeActivity</string>
+    <string name="title_activity_days">DaysActivity</string>
+    <string name="title_activity_day">DayActivity</string>
+    <string name="title_activity_note">NoteActivity</string>
+</resources>

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "221151401290",
+    "project_id": "tdspruebasfirebase",
+    "storage_bucket": "tdspruebasfirebase.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:221151401290:android:a5a074bd1f9ade41b05db3",
+        "android_client_info": {
+          "package_name": "com.example.tdspruebasfirebase"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDrKI2oat55cxMIRNy_YfEn3arIpWQRaLA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
