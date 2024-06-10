@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,7 +18,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Divider
@@ -39,31 +37,32 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.analytics.ktx.analytics
+import com.google.firebase.analytics.logEvent
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.crashlytics.FirebaseCrashlytics
+import com.google.firebase.ktx.Firebase
 import java.time.Month
 import java.time.Year
 
 class MonthsActivity : ComponentActivity() {
 
+    private lateinit var firebaseAnalytics: FirebaseAnalytics
     private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-
+        firebaseAnalytics = Firebase.analytics
         super.onCreate(savedInstanceState)
-
-
+        
         setContent {
 
-            val currentUser = auth.currentUser
-
-                       Column {
+            Column {
                 TopBar()
                 Divider()
-                Spacer(modifier = Modifier.height(50.dp))
+                Spacer(modifier = Modifier.height(20.dp))
                 Box(modifier = Modifier
                     .fillMaxWidth()
-                    .height(560.dp)) {
+                    .height(800.dp)) {
                     MyActivityScreen()
                 }
             }
@@ -73,9 +72,9 @@ class MonthsActivity : ComponentActivity() {
     @Composable
     fun MyActivityScreen() {
         val context = LocalContext.current
-        AgendaMeses { mes ->
+        MonthlyPlanner { month ->
             val intent = Intent(context, DayActivity::class.java).apply {
-                putExtra("mes", mes.name)
+                putExtra("mes", month.name)
             }
             context.startActivity(intent)
         }
@@ -97,94 +96,55 @@ class MonthsActivity : ComponentActivity() {
             Text("Simular Crash")
         }
     }
-
-    private fun getMonthInYear(year: Year): List<Month> {
-        val monthsInYear = mutableListOf<Month>()
-
-        for (month in Month.values()) {
-                monthsInYear.add(month)
-        }
-
-        return monthsInYear
-    }
-
     @Composable
-    fun AgendaMeses(onMonthSelected: (Month) -> Unit) {
-        /*  Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
+    fun MonthlyPlanner(onMonthSelected: (Month) -> Unit) {
+        val months = getMonthInYear()
+        Column (horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.padding(16.dp)
-        ) {
-            val meses = Month.values()
-            for (i in meses.indices step 2) {
+            modifier = Modifier.fillMaxSize()) {
+            Text(text = Year.now().toString(),
+                color = Color.Black, fontSize = 25.sp
+                ,textAlign = TextAlign.Center,
+                fontWeight = FontWeight.Bold)
+            Divider()
 
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    MesButton(mes = meses[i], onMonthSelected = onMonthSelected)
-                    if (i + 1 < meses.size) {
-                        MesButton(mes = meses[i + 1], onMonthSelected = onMonthSelected)
-                    } else {
-                        Spacer(modifier = Modifier.width(120.dp))
-                    }
+            LazyColumn(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                items(months) { month ->
+                    MonthButton(month = month, onMonthSelected = onMonthSelected)
                 }
             }
-        }*/
-        val months = getMonthInYear(Year.now())
-        LazyColumn(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxSize()
-        ) {
-            items(months) { month ->
-                MesButton(mes = month, onMonthSelected = onMonthSelected)
-
-            }
         }
     }
 
     @Composable
-    fun MesButton(mes: Month, onMonthSelected: (Month) -> Unit) {
-        /**/
-        val analytycs= FirebaseAnalytics.getInstance(this)
-        val bundle = Bundle()
-        bundle.putString("message","Mes Seleccionado")
-        /* * * * * * * * * * * * * * * * * * */
-
+    fun MonthButton(month: Month, onMonthSelected: (Month) -> Unit) {
         Button(
-            onClick = { onMonthSelected(mes)
+            onClick = { onMonthSelected(month)
 
-                                    /*ANALITYCS*/
-                /*MARCO COMO EVENTO MANUAL EN ANALITYCS EL MES SELECCIONADO */
-                analytycs.logEvent("Mes Seleccionado $mes", bundle)
-                /* * * * * *  * * * * * * * * */
+                /* * * * * * *  * * * * * * * * *  * * * * * * * **/
+                /*          ANALYTIC         */
+                /* para saber el mes selecciondado*/
+                firebaseAnalytics.logEvent("Mes_Seleccionado2") {
+                    param("Mes", month.name)
+                    param("usuario", auth.currentUser?.email.toString())
+                }
 
-            },
+
+                },
             modifier = Modifier
                 .padding(8.dp)
                 .width(300.dp)
-                .height(40.dp)
+                .height(35.dp)
             ,colors = ButtonDefaults.buttonColors((Color(0xFF039BE5)))
             ,contentPadding = PaddingValues(0.dp)
         ) {
-
-         val  monthSpanish=  when (mes.toString()) {
-                Month.JANUARY.toString() -> "Enero"
-                Month.FEBRUARY.toString() -> "Febrero"
-                Month.MARCH.toString() -> "Marzo"
-                Month.APRIL.toString() -> "Abril"
-                Month.MAY.toString() -> "Mayo"
-                Month.JUNE.toString() -> "Junio"
-                Month.JULY.toString() -> "Julio"
-                Month.AUGUST.toString() -> "Agosto"
-                Month.SEPTEMBER.toString() -> "Septiembre"
-                Month.OCTOBER.toString() -> "Octubre"
-                Month.NOVEMBER.toString() -> "Noviembre"
-                Month.DECEMBER.toString() -> "Diciembre"
-             else -> {}
-         }
+         val  monthSpanish=  MonthSpanish(month.toString())
             Text(
-                monthSpanish.toString(),
+                monthSpanish,
                 fontSize = 16.sp,
                 color = Color.White,
                 fontWeight = FontWeight.Bold,
@@ -194,16 +154,16 @@ class MonthsActivity : ComponentActivity() {
     }
 
 
-
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun TopBar() {
         TopAppBar(
-                 title = { Text(text ="                    "+Year.now().toString()
-                , color = Color.Black
-                ,textAlign = TextAlign.Center,
-                fontWeight = FontWeight.Bold
-                ) }
+                 title = { Text(text = "             Elija el mes",
+                     color = Color.Black, fontSize = 25.sp
+                     ,textAlign = TextAlign.Center,
+                     fontWeight = FontWeight.Bold)
+
+                 }
                 ,colors = TopAppBarDefaults.topAppBarColors(Color(0xFF039BE5))
                 ,navigationIcon = {
 
@@ -217,9 +177,31 @@ class MonthsActivity : ComponentActivity() {
             }
         )
     }
+    fun MonthSpanish(month:String):String{
+        return    when (month) {
+            Month.JANUARY.toString() -> "Enero"
+            Month.FEBRUARY.toString() -> "Febrero"
+            Month.MARCH.toString() -> "Marzo"
+            Month.APRIL.toString() -> "Abril"
+            Month.MAY.toString() -> "Mayo"
+            Month.JUNE.toString() -> "Junio"
+            Month.JULY.toString() -> "Julio"
+            Month.AUGUST.toString() -> "Agosto"
+            Month.SEPTEMBER.toString() -> "Septiembre"
+            Month.OCTOBER.toString() -> "Octubre"
+            Month.NOVEMBER.toString() -> "Noviembre"
+            Month.DECEMBER.toString() -> "Diciembre"
+            else -> {""}
+        }
 
-    fun UserName(email: String): String {
-        return email.substringBefore('@')
+    }
+
+    private fun getMonthInYear(): List<Month> {
+        val monthsInYear = mutableListOf<Month>()
+        for (month in Month.values()) {
+            monthsInYear.add(month)
+        }
+        return monthsInYear
     }
 
 }

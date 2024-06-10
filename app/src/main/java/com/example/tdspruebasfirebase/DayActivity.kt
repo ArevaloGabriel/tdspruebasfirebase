@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -41,49 +42,55 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.tdspruebasfirebase.ui.theme.TdspruebasfirebaseTheme
+import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.analytics.ktx.analytics
+import com.google.firebase.analytics.logEvent
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.ktx.Firebase
 import java.time.Month
 import java.time.Year
 
 class DayActivity : ComponentActivity() {
     private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
+    private lateinit var firebaseAnalytics: FirebaseAnalytics
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        firebaseAnalytics = Firebase.analytics
         setContent {
             val currentUser = auth.currentUser
             val userName = currentUser?.email?.let { obtenerNombreUsuario(it) } ?: ""
-            val mes = intent.getStringExtra("mes") ?: return@setContent
+            val month = intent.getStringExtra("mes") ?: return@setContent
             Column {
-                TopBar(mes)
+                TopBar()
                 Divider()
-                Spacer(modifier = Modifier.height(50.dp))
+                Spacer(modifier = Modifier.height(20.dp))
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(560.dp)
+                        .height(800.dp)
                 ) {
-                    DayActivityScreen(mes)
+                    DayActivityScreen(month)
                 }
             }
         }
     }
-    fun obtenerNombreUsuario(correoElectronico: String): String {
-        return correoElectronico.substringBefore('@')
-    }
+
     @Composable
-    fun DayActivityScreen(mes: String) {
-        val daysInMonth = getDaysInMonth(Month.valueOf(mes.toUpperCase()))
+    fun DayActivityScreen(month: String) {
+        val  monthSpanish=  MonthSpanish(month)
+
+        val daysInMonth = getDaysInMonth(Month.valueOf(month.toUpperCase()))
         val context = LocalContext.current
 
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
+        Column(horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxSize()
+            modifier = Modifier.fillMaxSize()
         ) {
-
-
+            Text(text =Year.now().toString() +"-"+ monthSpanish.toString(),
+                color = Color.Black, fontSize = 25.sp
+                ,textAlign = TextAlign.Center,
+                fontWeight = FontWeight.Bold)
+            Divider()
             LazyColumn(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -91,13 +98,9 @@ class DayActivity : ComponentActivity() {
             ) {
                 items(daysInMonth) { day ->
                     DayButton(day) {
-                        Toast.makeText(context, "Día seleccionado: $day", Toast.LENGTH_SHORT).show()
-                        // Aquí puedes agregar la lógica para manejar la selección del día
-                        // Navegar a MonthDetailActivity pasando el nombre del mes seleccionado
                         val intent = Intent(context, NoteActivity::class.java).apply {
-                            putExtra("mes", mes)
+                            putExtra("mes", month)
                             putExtra("dia",day)
-
                         }
                         context.startActivity(intent)
                     }
@@ -109,11 +112,20 @@ class DayActivity : ComponentActivity() {
     @Composable
     fun DayButton(day: Int, onDaySelected: (Int) -> Unit) {
         Button(
-            onClick = { onDaySelected(day) },
+            onClick = { onDaySelected(day)
+
+                /* * * * * * *  * * * * * * * * *  * * * * * * * **/
+                /*          ANALYTIC         */
+                /* para saber el dia selecciondado*/
+                firebaseAnalytics.logEvent("dia_Seleccionado") {
+                    param("Dia", day.toString())
+                    param("usuario", auth.currentUser?.email.toString())
+                }
+                      },
             modifier = Modifier
                 .padding(8.dp)
-                .fillMaxWidth()
-                .height(40.dp)
+                .width(300.dp)
+                .height(35.dp)
             ,colors = ButtonDefaults.buttonColors((Color(0xFF039BE5)))
             ,
         ) {
@@ -121,37 +133,16 @@ class DayActivity : ComponentActivity() {
         }
     }
 
-    private fun getDaysInMonth(month: Month): List<Int> {
-        val year = Year.now().value
-        val length = month.length(Year.isLeap(year.toLong()))
-        return (1..length).toList()
-    }
-
-
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    fun TopBar(mes: String) {
-        val  monthSpanish=  when (mes) {
-            Month.JANUARY.toString() -> "Enero"
-            Month.FEBRUARY.toString() -> "Febrero"
-            Month.MARCH.toString() -> "Marzo"
-            Month.APRIL.toString() -> "Abril"
-            Month.MAY.toString() -> "Mayo"
-            Month.JUNE.toString() -> "Junio"
-            Month.JULY.toString() -> "Julio"
-            Month.AUGUST.toString() -> "Agosto"
-            Month.SEPTEMBER.toString() -> "Septiembre"
-            Month.OCTOBER.toString() -> "Octubre"
-            Month.NOVEMBER.toString() -> "Noviembre"
-            Month.DECEMBER.toString() -> "Diciembre"
-            else -> {}
-        }
+    fun TopBar() {
+
         TopAppBar(
-            title = { Text(text ="                    "+monthSpanish.toString()
-                , color = Color.Black
+            title = { Text(text ="               Elija el dia",
+                color = Color.Black, fontSize = 25.sp
                 ,textAlign = TextAlign.Center,
-                fontWeight = FontWeight.Bold,
-            ) }
+                fontWeight = FontWeight.Bold)
+             }
             ,
             colors = TopAppBarDefaults.topAppBarColors(Color(0xFF039BE5)),
             navigationIcon = {
@@ -168,5 +159,31 @@ class DayActivity : ComponentActivity() {
 
             }
         )
+    }
+    fun obtenerNombreUsuario(email: String): String {
+        return email.substringBefore('@')
+    }
+     fun getDaysInMonth(month: Month): List<Int> {
+        val year = Year.now().value
+        val length = month.length(Year.isLeap(year.toLong()))
+        return (1..length).toList()
+    }
+    fun MonthSpanish(month:String):String{
+        return    when (month) {
+            Month.JANUARY.toString() -> "Enero"
+            Month.FEBRUARY.toString() -> "Febrero"
+            Month.MARCH.toString() -> "Marzo"
+            Month.APRIL.toString() -> "Abril"
+            Month.MAY.toString() -> "Mayo"
+            Month.JUNE.toString() -> "Junio"
+            Month.JULY.toString() -> "Julio"
+            Month.AUGUST.toString() -> "Agosto"
+            Month.SEPTEMBER.toString() -> "Septiembre"
+            Month.OCTOBER.toString() -> "Octubre"
+            Month.NOVEMBER.toString() -> "Noviembre"
+            Month.DECEMBER.toString() -> "Diciembre"
+            else -> {""}
+        }
+
     }
 }

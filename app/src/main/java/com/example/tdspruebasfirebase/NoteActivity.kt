@@ -34,7 +34,9 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -42,28 +44,37 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
 import com.example.tdspruebasfirebase.ui.theme.TdspruebasfirebaseTheme
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 import java.time.Month
 
 
 class NoteActivity : ComponentActivity() {
 
     private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
-    lateinit var mes: String
-    lateinit var dia :String
+    lateinit var month: String
+    lateinit var day :String
 
 
     @SuppressLint("SuspiciousIndentation")
     override fun onCreate(savedInstanceState: Bundle?) {
 
         super.onCreate(savedInstanceState)
-      mes = intent.getStringExtra("mes") ?: ""
-      dia = intent.getIntExtra("dia",0).toString()
+      month = intent.getStringExtra("mes") ?: ""
+      day = intent.getIntExtra("dia",0).toString()
 
         setContent {
             val currentUser = auth.currentUser
@@ -76,31 +87,15 @@ Column {
 
         }
     }
-    fun obtenerNombreUsuario(correoElectronico: String): String {
-        return correoElectronico.substringBefore('@')
-    }
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun NoteActivityScreen() {
         val context = LocalContext.current
         var textState by remember { mutableStateOf("") }
-        val selectedDate by remember { mutableStateOf<String?>(dia) }
-        val  monthSpanish=  when (mes) {
-            Month.JANUARY.toString() -> "Enero"
-            Month.FEBRUARY.toString() -> "Febrero"
-            Month.MARCH.toString() -> "Marzo"
-            Month.APRIL.toString() -> "Abril"
-            Month.MAY.toString() -> "Mayo"
-            Month.JUNE.toString() -> "Junio"
-            Month.JULY.toString() -> "Julio"
-            Month.AUGUST.toString() -> "Agosto"
-            Month.SEPTEMBER.toString() -> "Septiembre"
-            Month.OCTOBER.toString() -> "Octubre"
-            Month.NOVEMBER.toString() -> "Noviembre"
-            Month.DECEMBER.toString() -> "Diciembre"
-            else -> {}
-        }
+        val selectedDate by remember { mutableStateOf<String?>(day) }
+        val  monthSpanish= MonthSpanish(month)
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -135,8 +130,10 @@ Column {
             Button(
                 onClick = {
                     val texto = textState
-                    val mes = mes
-                    val dia = dia
+                    val mes = month
+                    val dia = day
+                    var id :Long = 1
+                    val fecha=  MonthValueToInt(mes.toString())
 
 
                     if (texto.isEmpty()) {
@@ -145,13 +142,18 @@ Column {
                         /*CREO UN CRASH SI TRATA DE GUARDAR UNA NOTA VACIA*/
 
                         val crashlytics = FirebaseCrashlytics.getInstance()
+                        crashlytics.log("Intento guardar una nota vacia")
                         crashlytics.recordException(Exception("Intento guardar una nota vacia"))
                         /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
                         Toast.makeText(context, "La nota no puede estar vacía", Toast.LENGTH_SHORT).show()
                     } else {
                             /*GUARDAR LA NOTA EN FIRESTORE*/
-                            saveNoteToFirebase(context, texto, mes, dia)
+                        lifecycleScope.launch {
+                            id= getNextId()
+                        }
+                            saveNoteToFirebase(context, texto, mes, dia, fecha,id)
+
                         Toast.makeText(context, "Nota guardada correctamente", Toast.LENGTH_SHORT)
                             .show()
                     }
@@ -166,7 +168,75 @@ Column {
         }
     }
 
-    fun saveNoteToFirebase(context: Context, texto: String, mes: String, dia: String) {
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun TopBar(userName: String) {
+        TopAppBar(
+
+            title = { Text(text = "                 "+userName,
+                color = Color.Black,
+                fontSize = 25.sp
+                ,textAlign = TextAlign.Center,
+                fontWeight = FontWeight.Bold) }
+            ,colors = TopAppBarDefaults.topAppBarColors(Color(0xFF039BE5))
+            ,navigationIcon = {
+                IconButton(onClick = {
+                    startActivity(
+                        Intent(
+                            this@NoteActivity, HomeActivity ::class.java)
+
+                    )
+                }) {
+                    Icon(Icons.Filled.ArrowBack, contentDescription = "Atrás")
+                }
+            },
+            actions = {
+            }
+        )
+    }
+    fun MonthSpanish(month:String):String{
+        return    when (month) {
+            Month.JANUARY.toString() -> "Enero"
+            Month.FEBRUARY.toString() -> "Febrero"
+            Month.MARCH.toString() -> "Marzo"
+            Month.APRIL.toString() -> "Abril"
+            Month.MAY.toString() -> "Mayo"
+            Month.JUNE.toString() -> "Junio"
+            Month.JULY.toString() -> "Julio"
+            Month.AUGUST.toString() -> "Agosto"
+            Month.SEPTEMBER.toString() -> "Septiembre"
+            Month.OCTOBER.toString() -> "Octubre"
+            Month.NOVEMBER.toString() -> "Noviembre"
+            Month.DECEMBER.toString() -> "Diciembre"
+            else -> {""}
+        }
+
+    }
+    suspend fun getNextId(): Long {
+        var id :Long=0
+        val auth = FirebaseAuth.getInstance()
+        val currentUser = auth.currentUser
+        val userId = currentUser?.email
+        val listId = mutableStateListOf<Long>()
+        lifecycleScope.launch {
+            val querySnapshot = userId?.let {
+                FirebaseFirestore.getInstance()
+                    .collection("Usuarios con Notas").document(it).collection("Notas")
+                    .get()
+                    .await()
+            }
+            if (querySnapshot != null) {
+                for (document in querySnapshot.documents) {
+                     id = document.getLong("notaID") ?: 0
+                   id+1
+                }
+            }
+        }
+        return id
+    }
+
+
+    fun saveNoteToFirebase(context: Context, texto: String, month: String, day: String,date :Int,noteId:Long) {
         val db = FirebaseFirestore.getInstance()
         val auth = FirebaseAuth.getInstance()
         val currentUser = auth.currentUser
@@ -174,9 +244,11 @@ Column {
             val userId = currentUser.email
             val note = hashMapOf(
                 "texto" to texto,
-                "mes" to mes,
-                "dia" to dia,
-                "userId" to userId
+                "mes" to month,
+                "dia" to day,
+                "fecha" to date,
+                "userId" to userId,
+                "notaID" to noteId
             )
                                     /* CLOUD FIRESTORE */
                          /* ACA SE ALMACENA LA NOTA EN FIREBASE */
@@ -196,29 +268,25 @@ Column {
         }
                    /* * * * * * * * * * * *  ** * * *  * * * * * *  * */
     }
-    @OptIn(ExperimentalMaterial3Api::class)
-    @Composable
-    fun TopBar(userName: String) {
-        TopAppBar(
 
-            title = { Text(text = "                 "+userName, color = Color.Black) }
-            ,colors = TopAppBarDefaults.topAppBarColors(Color(0xFF039BE5))
-            ,navigationIcon = {
-                IconButton(onClick = {
-                    startActivity(
-                        Intent(
-                            this@NoteActivity, HomeActivity ::class.java)
-
-                    )
-                }) {
-                    Icon(Icons.Filled.ArrowBack, contentDescription = "Atrás")
-                }
-            },
-            actions = {
-
-            }
-
-        )
-
+    fun obtenerNombreUsuario(correoElectronico: String): String {
+        return correoElectronico.substringBefore('@')
+    }
+    fun MonthValueToInt(month : String): Int {
+        return  when (month) {
+            Month.JANUARY.toString() -> 1
+            Month.FEBRUARY.toString() -> 2
+            Month.MARCH.toString() ->3
+            Month.APRIL.toString() -> 4
+            Month.MAY.toString() -> 5
+            Month.JUNE.toString() -> 6
+            Month.JULY.toString() -> 7
+            Month.AUGUST.toString() ->8
+            Month.SEPTEMBER.toString() -> 9
+            Month.OCTOBER.toString() -> 10
+            Month.NOVEMBER.toString() -> 11
+            Month.DECEMBER.toString() -> 12
+            else -> {0}
+        }
     }
 }

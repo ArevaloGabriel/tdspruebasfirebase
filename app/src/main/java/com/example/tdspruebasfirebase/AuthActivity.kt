@@ -8,7 +8,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,7 +23,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedTextField
-
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
@@ -52,6 +50,7 @@ import kotlinx.coroutines.tasks.await
 @Suppress("UNREACHABLE_CODE")
 class AuthActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+
         super.onCreate(savedInstanceState)
 
         setContent {
@@ -96,7 +95,7 @@ class AuthActivity : ComponentActivity() {
             colors = TextFieldDefaults.outlinedTextFieldColors(
                 focusedBorderColor = Color.DarkGray,
                 unfocusedBorderColor = Color.DarkGray,
-                cursorColor = Color.Black, // Color del cursor
+                cursorColor = Color.Black,
                 focusedLabelColor = Color.Black,
                 unfocusedLabelColor = Color.DarkGray,
 
@@ -132,7 +131,6 @@ class AuthActivity : ComponentActivity() {
                 onClick = {
 
                     if(email.isNotEmpty() && password.isNotEmpty()){
-
                         FirebaseAuth.getInstance().signInWithEmailAndPassword(email,password)
                             .addOnCompleteListener { task ->
                                 if (task.isSuccessful){
@@ -196,6 +194,7 @@ class AuthActivity : ComponentActivity() {
                                         /*CREO UN CRASH SI TRATA DE REGISTRARSE CON UN USUARIO REGISTRADO*/
 
                                         val crashlytics = FirebaseCrashlytics.getInstance()
+                                        crashlytics.log("Intento registrarse con usuario registrado")
                                         crashlytics.recordException(Exception("Intento registrarse con usuario registrado"))
                                         /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
