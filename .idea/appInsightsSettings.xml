@@ -9,9 +9,9 @@
               <option name="connection">
                 <ConnectionSetting>
                   <option name="appId" value="com.example.tdspruebasfirebase" />
-                  <option name="mobileSdkAppId" value="1:221151401290:android:a5a074bd1f9ade41b05db3" />
-                  <option name="projectId" value="tdspruebasfirebase" />
-                  <option name="projectNumber" value="221151401290" />
+                  <option name="mobileSdkAppId" value="1:986431021442:android:408cb2dcd393e5e978ef9b" />
+                  <option name="projectId" value="tpfirebase2024-db448" />
+                  <option name="projectNumber" value="986431021442" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

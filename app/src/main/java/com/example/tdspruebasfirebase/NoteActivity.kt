@@ -54,7 +54,9 @@ import androidx.lifecycle.lifecycleScope
 import com.example.tdspruebasfirebase.ui.theme.TdspruebasfirebaseTheme
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.crashlytics.FirebaseCrashlytics
+import com.google.firebase.crashlytics.ktx.crashlytics
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -65,6 +67,7 @@ import java.time.Month
 class NoteActivity : ComponentActivity() {
 
     private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
+    private lateinit var firebaseCrashlytics:FirebaseCrashlytics
     lateinit var month: String
     lateinit var day :String
 
@@ -73,7 +76,8 @@ class NoteActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
 
         super.onCreate(savedInstanceState)
-      month = intent.getStringExtra("mes") ?: ""
+        firebaseCrashlytics = Firebase.crashlytics
+        month = intent.getStringExtra("mes") ?: ""
       day = intent.getIntExtra("dia",0).toString()
 
         setContent {
@@ -141,9 +145,9 @@ Column {
                           /* CRASHLYTICS 2*/
                         /*CREO UN CRASH SI TRATA DE GUARDAR UNA NOTA VACIA*/
 
-                        val crashlytics = FirebaseCrashlytics.getInstance()
-                        crashlytics.log("Intento guardar una nota vacia")
-                        crashlytics.recordException(Exception("Intento guardar una nota vacia"))
+                        firebaseCrashlytics = FirebaseCrashlytics.getInstance()
+                        firebaseCrashlytics.log("Intento guardar una nota vacia")
+                        firebaseCrashlytics.recordException(Exception("Intento guardar una nota vacia"))
                         /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
                         Toast.makeText(context, "La nota no puede estar vacía", Toast.LENGTH_SHORT).show()

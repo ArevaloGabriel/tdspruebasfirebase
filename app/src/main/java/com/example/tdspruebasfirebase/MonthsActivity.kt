@@ -36,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.os.bundleOf
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.analytics.ktx.analytics
 import com.google.firebase.analytics.logEvent
@@ -51,9 +52,9 @@ class MonthsActivity : ComponentActivity() {
     private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        firebaseAnalytics = Firebase.analytics
+
         super.onCreate(savedInstanceState)
-        
+        firebaseAnalytics = Firebase.analytics
         setContent {
 
             Column {
@@ -125,13 +126,14 @@ class MonthsActivity : ComponentActivity() {
         Button(
             onClick = { onMonthSelected(month)
 
+
                 /* * * * * * *  * * * * * * * * *  * * * * * * * **/
                 /*          ANALYTIC         */
                 /* para saber el mes selecciondado*/
                 firebaseAnalytics.logEvent("Mes_Seleccionado2") {
                     param("Mes", month.name)
                     param("usuario", auth.currentUser?.email.toString())
-                }
+               }
 
 
                 },

@@ -39,20 +39,24 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
+import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.analytics.ktx.analytics
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.crashlytics.FirebaseCrashlytics
+import com.google.firebase.crashlytics.ktx.crashlytics
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 
 @Suppress("UNREACHABLE_CODE")
 class AuthActivity : ComponentActivity() {
+    private lateinit var firebaseCrashlytics: FirebaseCrashlytics
     override fun onCreate(savedInstanceState: Bundle?) {
-
         super.onCreate(savedInstanceState)
-
+        firebaseCrashlytics = Firebase.crashlytics
         setContent {
             LoginScreen()
 
@@ -193,9 +197,10 @@ class AuthActivity : ComponentActivity() {
                                                        /* CRASHLYTICS 1*/
                                         /*CREO UN CRASH SI TRATA DE REGISTRARSE CON UN USUARIO REGISTRADO*/
 
-                                        val crashlytics = FirebaseCrashlytics.getInstance()
-                                        crashlytics.log("Intento registrarse con usuario registrado")
-                                        crashlytics.recordException(Exception("Intento registrarse con usuario registrado"))
+                                        firebaseCrashlytics = FirebaseCrashlytics.getInstance()
+                                        firebaseCrashlytics.log("Intento registrarse con usuario registrado")
+                                        firebaseCrashlytics.recordException(Exception("Intento registrarse con usuario registrado"))
+                                      Log.d("crashlytics","Intento registrarse con usuario registrado")
                                         /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
                                         Toast.makeText(context,"Error: El usuario $email , ya existe",Toast.LENGTH_SHORT).show()
