@@ -13,11 +13,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 
-
-
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -26,6 +25,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -38,9 +38,14 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment.Companion.BottomStart
 import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -48,9 +53,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.lifecycleScope
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.ktx.Firebase
+import com.google.firebase.remoteconfig.ktx.remoteConfig
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.time.LocalDate
 import java.time.Month
@@ -58,11 +67,23 @@ import java.time.Month
 class HomeActivity : ComponentActivity() {
 
     private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
+    private var botonBorrarVisible by mutableStateOf(false)
     override fun onCreate(savedInstanceState: Bundle?) {
         val currentUser = auth.currentUser
-        val userName = currentUser?.email?.let { NameUser(it) } ?: ""
 
         super.onCreate(savedInstanceState)
+        val userName = currentUser?.email?.let { NameUser(it) } ?: ""
+
+     Firebase.remoteConfig.fetchAndActivate().addOnCompleteListener { task->
+            if(task.isSuccessful){
+                val botonBorrar=Firebase.remoteConfig.getBoolean("boton_borrar")
+           if(botonBorrar){
+              this.botonBorrarVisible = true
+           }
+
+            }
+
+        }
         setContent {
 
             Column {
@@ -71,14 +92,15 @@ class HomeActivity : ComponentActivity() {
                 Divider()
                 NotesActivityScreen()
             }
-
         }
+
     }
 
 
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @Composable
     fun NotesActivityScreen() {
+
         val context = LocalContext.current
         val auth = FirebaseAuth.getInstance()
         val currentUser = auth.currentUser
@@ -87,7 +109,9 @@ class HomeActivity : ComponentActivity() {
             Text("Usuario no autenticado")
         } else {
             val userId = currentUser.email
+
             val notes = remember { mutableStateListOf<Note>() }
+
             /*ACA SE REALIZA LAS CONSULTAS A LA BASE DE DATOS DE FIREBASE PARA RECUPERAR LAS NOTAS */
             LaunchedEffect(Unit) {
                 val querySnapshot = userId?.let {
@@ -97,15 +121,15 @@ class HomeActivity : ComponentActivity() {
                         .get()
                         .await()
                 }
-                /*BORRO LAS NOTAS VIEJAS POR LAS DUDAS PARA ACTUALIZAR*/
                 notes.clear()
-                /* * * * * *  * * * * * * * */
+
                 if (querySnapshot != null) {
                     for (document in querySnapshot.documents) {
                         val text = document.getString("texto") ?: ""
                         val month = document.getString("mes") ?: ""
                         val day = document.getString("dia") ?: ""
-                        notes.add(Note(text, month, day))
+                        val id = document.id
+                        notes.add(Note(id, text, month, day))
                     }
                     // Verifica las notas para el día actual
                     val today = LocalDate.now()
@@ -143,33 +167,91 @@ class HomeActivity : ComponentActivity() {
                     Log.d("NotesActivityScreen", "querySnapshot es nulo")
                 }
             }
-            Scaffold(
-                floatingActionButton = {
-                    FloatingActionButton(
-                        onClick = {
-                            /*ME LLEVA A LA PANTALLA DE MES , PARA PODER ELEGIR */
-                            val intent = Intent(context, MonthsActivity::class.java).apply { }
-                            context.startActivity(intent)
-                            /* * *  **  * * * * * * * *  * * * **/
-                        },
-                        modifier = Modifier.padding(16.dp),
-                        shape = CircleShape,
-                        containerColor = Color(color = 0xFF039BE5)
-                    ) {
-                        Icon(
-                            Icons.Default.Add,
-                            contentDescription = "Agregar nota",
-                            modifier = Modifier
-                                .background(Color(color = 0xFF039BE5))
-                                .size(36.dp)
-                        )
-                    }
+            Box(modifier = Modifier.fillMaxSize()) {
+                Scaffold(
+                    floatingActionButton = {
+                        Row(
+                            verticalAlignment = Alignment.Bottom,
+                            horizontalArrangement = Arrangement.Start,
+                            modifier = Modifier.padding(end = 20.dp)
+                        ) {
+                            /* * * * *  * * * * * * * * *  **  * * * *
+                            * REMOTE CONFIG
+                            * PARA PODER VER EL BOTON DE BORRAR NOTAAS O NO DE
+                            * LA BASE DE DATOS
+                            *  */
+                             if (botonBorrarVisible) {
+                                 /* * * * * * * * *  * * * * **/
+
+                                FloatingActionButton(
+                                    onClick = {
+
+                                        // Llama a la función para borrar una nota específica
+                                        if (notes.isNotEmpty()) {
+                                            val noteId =
+                                                notes[0].id // Borrar la primera nota como ejemplo
+                                            val userName = currentUser?.email
+                                            DeletteNoteFromFirestore(userName.toString(), noteId)
+
+                                            notes.removeAt(0) // Actualiza la lista local
+                                        }
+                                    },
+                                    modifier = Modifier
+                                        .padding(16.dp),
+                                    shape = CircleShape,
+                                    containerColor = Color(color = 0xFFFF0000)
+                                ) {
+                                    Icon(Icons.Default.Close, contentDescription = "Delete")
+                                }
+                            }
+                            Spacer(modifier = Modifier.padding(end = 180.dp))
+                            FloatingActionButton(
+                                onClick = {
+                                    /*ME LLEVA A LA PANTALLA DE MES , PARA PODER ELEGIR */
+                                    val intent =
+                                        Intent(context, MonthsActivity::class.java).apply { }
+                                    context.startActivity(intent)
+                                    /* * *  **  * * * * * * * *  * * * **/
+                                },
+                                modifier = Modifier.padding(16.dp),
+                                shape = CircleShape,
+                                containerColor = Color(color = 0xFF039BE5)
+                            ) {
+                                Icon(
+                                    Icons.Default.Add,
+                                    contentDescription = "Agregar nota",
+                                    modifier = Modifier
+                                        .background(Color(color = 0xFF039BE5))
+                                        .size(36.dp)
+                                )
+                            }
+                        }
+                    },
+                ) {
+                    NotesList(notes)
                 }
-            ) {
-                NotesList(notes)
             }
         }
     }
+
+
+
+    private fun DeletteNoteFromFirestore(userId: String, noteId: String) {
+        val db =FirebaseFirestore.getInstance()
+        val usuarioRef = db.collection("Usuarios con Notas").document(userId)
+        val notaRef = usuarioRef.collection("Notas").document(noteId)
+        Log.d("Firestore", "Borrando nota con ID: $noteId para usuario: $userId")
+        lifecycleScope.launch {
+    notaRef.delete()
+        .addOnSuccessListener {
+            Log.d("Firestore", "Documento borrado con éxito")
+        }
+        .addOnFailureListener { e ->
+            Log.w("Firestore", "Error al borrar el documento", e)
+        }
+}
+          }
+
 
     @Composable
     fun NotesList(notes: List<Note>) {
@@ -354,4 +436,4 @@ fun PreviewStatusIndicators() {
 }
 
 /*  CLASE PARA PODER MAPEAR LAS NOTAS */
-data class Note(val text: String, val month: String, val day: String)
+data class Note(val id : String ,val text: String, val month: String, val day: String)

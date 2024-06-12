@@ -47,6 +47,9 @@ import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.google.firebase.crashlytics.ktx.crashlytics
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.ktx.Firebase
+import com.google.firebase.remoteconfig.FirebaseRemoteConfig
+import com.google.firebase.remoteconfig.ktx.remoteConfig
+import com.google.firebase.remoteconfig.ktx.remoteConfigSettings
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
@@ -57,6 +60,16 @@ class AuthActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         firebaseCrashlytics = Firebase.crashlytics
+
+        val remoteConfig: FirebaseRemoteConfig = Firebase.remoteConfig
+        val settings = remoteConfigSettings {
+            minimumFetchIntervalInSeconds = 30 // 3600 = 1 hora, por default es 12 horas!!!
+            fetchTimeoutInSeconds = 10
+        }
+        remoteConfig.setConfigSettingsAsync(settings)
+        remoteConfig.setDefaultsAsync(mapOf("boton_borrar" to false))
+
+
         setContent {
             LoginScreen()
 

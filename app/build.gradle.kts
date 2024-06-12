@@ -79,4 +79,5 @@ dependencies {
     implementation ("com.google.firebase:firebase-firestore-ktx")
     implementation(libs.firebase.inappmessaging.display)
     implementation ("com.google.firebase:firebase-messaging")
+    implementation ("com.google.firebase:firebase-config-ktx")
 }
