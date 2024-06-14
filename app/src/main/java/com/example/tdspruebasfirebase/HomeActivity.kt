@@ -70,18 +70,30 @@ class HomeActivity : ComponentActivity() {
 
     private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
     private var botonBorrarVisible by mutableStateOf(false)
+    private var botonCrashVisible by mutableStateOf(false)
     override fun onCreate(savedInstanceState: Bundle?) {
         val currentUser = auth.currentUser
 
         super.onCreate(savedInstanceState)
         val userName = currentUser?.email?.let { NameUser(it) } ?: ""
 
-     Firebase.remoteConfig.fetchAndActivate().addOnCompleteListener { task->
-            if(task.isSuccessful){
-                val botonBorrar=Firebase.remoteConfig.getBoolean("boton_borrar")
-           if(botonBorrar){
-              this.botonBorrarVisible = true
-           }
+        Firebase.remoteConfig.fetchAndActivate().addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                val botonBorrar = Firebase.remoteConfig.getBoolean("boton_borrar")
+                if (botonBorrar) {
+                    this.botonBorrarVisible = true
+                }
+
+            }
+
+        }
+
+        Firebase.remoteConfig.fetchAndActivate().addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                val botonCrash = Firebase.remoteConfig.getBoolean("boton_crash")
+                if (botonCrash) {
+                    this.botonCrashVisible = true
+                }
 
             }
 
@@ -182,8 +194,8 @@ class HomeActivity : ComponentActivity() {
                             * PARA PODER VER EL BOTON DE BORRAR NOTAAS O NO DE
                             * LA BASE DE DATOS
                             *  */
-                             if (botonBorrarVisible) {
-                                 /* * * * * * * * *  * * * * **/
+                            if (botonBorrarVisible) {
+                                /* * * * * * * * *  * * * * **/
 
                                 FloatingActionButton(
                                     onClick = {
@@ -237,22 +249,21 @@ class HomeActivity : ComponentActivity() {
     }
 
 
-
     private fun DeletteNoteFromFirestore(userId: String, noteId: String) {
-        val db =FirebaseFirestore.getInstance()
+        val db = FirebaseFirestore.getInstance()
         val usuarioRef = db.collection("Usuarios con Notas").document(userId)
         val notaRef = usuarioRef.collection("Notas").document(noteId)
         Log.d("Firestore", "Borrando nota con ID: $noteId para usuario: $userId")
         lifecycleScope.launch {
-    notaRef.delete()
-        .addOnSuccessListener {
-            Log.d("Firestore", "Documento borrado con éxito")
+            notaRef.delete()
+                .addOnSuccessListener {
+                    Log.d("Firestore", "Documento borrado con éxito")
+                }
+                .addOnFailureListener { e ->
+                    Log.w("Firestore", "Error al borrar el documento", e)
+                }
         }
-        .addOnFailureListener { e ->
-            Log.w("Firestore", "Error al borrar el documento", e)
-        }
-}
-          }
+    }
 
 
     @Composable
@@ -319,12 +330,14 @@ class HomeActivity : ComponentActivity() {
             title = { Text(text = "    Agenda de  " + userName, color = Color.Black) },
             colors = TopAppBarDefaults.topAppBarColors(Color(0xFF039BE5)),
             actions = {
-                IconButton(onClick = {
-                    val crashlytics = FirebaseCrashlytics.getInstance()
-                    crashlytics.log("Error forzado en la homeScreen")
-                    throw RuntimeException("Este es un error forzado")
-                }) {
-                 Icon(Icons.Filled.Warning, contentDescription = "Forzar Error")
+                if(botonCrashVisible){
+                    IconButton(onClick = {
+                        val crashlytics = FirebaseCrashlytics.getInstance()
+                        crashlytics.log("Error forzado en la homeScreen")
+                        throw RuntimeException("Este es un error forzado")
+                    }) {
+                        Icon(Icons.Filled.Warning, contentDescription = "Forzar Error")
+                    }
                 }
                 IconButton(onClick = {
 
@@ -408,6 +421,7 @@ class HomeActivity : ComponentActivity() {
 
     }
 }
+
 @Composable
 fun StatusIndicators() {
     Row(
@@ -445,4 +459,4 @@ fun PreviewStatusIndicators() {
 }
 
 /*  CLASE PARA PODER MAPEAR LAS NOTAS */
-data class Note(val id : String ,val text: String, val month: String, val day: String)
+data class Note(val id: String, val text: String, val month: String, val day: String)
