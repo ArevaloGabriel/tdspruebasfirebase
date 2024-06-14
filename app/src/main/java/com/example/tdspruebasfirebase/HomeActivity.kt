@@ -27,6 +27,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -56,6 +57,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.remoteconfig.ktx.remoteConfig
@@ -317,6 +319,13 @@ class HomeActivity : ComponentActivity() {
             title = { Text(text = "    Agenda de  " + userName, color = Color.Black) },
             colors = TopAppBarDefaults.topAppBarColors(Color(0xFF039BE5)),
             actions = {
+                IconButton(onClick = {
+                    val crashlytics = FirebaseCrashlytics.getInstance()
+                    crashlytics.log("Error forzado en la homeScreen")
+                    throw RuntimeException("Este es un error forzado")
+                }) {
+                 Icon(Icons.Filled.Warning, contentDescription = "Forzar Error")
+                }
                 IconButton(onClick = {
 
 
