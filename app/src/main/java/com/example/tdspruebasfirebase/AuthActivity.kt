@@ -39,10 +39,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
-import com.google.firebase.analytics.FirebaseAnalytics
-import com.google.firebase.analytics.ktx.analytics
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.google.firebase.crashlytics.ktx.crashlytics
 import com.google.firebase.firestore.FirebaseFirestore
@@ -207,13 +204,24 @@ class AuthActivity : ComponentActivity() {
                                             Toast.LENGTH_SHORT
                                         ).show()
                                     } else {
+
+
                                                        /* CRASHLYTICS 1*/
                                         /*CREO UN CRASH SI TRATA DE REGISTRARSE CON UN USUARIO REGISTRADO*/
 
-                                        firebaseCrashlytics = FirebaseCrashlytics.getInstance()
-                                        firebaseCrashlytics.log("Intento registrarse con usuario registrado")
-                                        firebaseCrashlytics.recordException(Exception("Intento registrarse con usuario registrado"))
-                                      Log.d("crashlytics","Intento registrarse con usuario registrado")
+                                        try {
+                                                         // Simulamos un error crítico
+                                            throw Exception("Intento registrarse con usuario registrado")
+                                        } catch (e: Exception) {
+
+                                            val firebaseCrashlytics = FirebaseCrashlytics.getInstance()
+                                            firebaseCrashlytics.log("Intento registrarse con usuario registrado")
+                                            firebaseCrashlytics.recordException(e)
+                                            Log.d("crashlytics", "Intento registrarse con usuario registrado")
+
+                                            // Forzar el cierre de la aplicación
+                                            finishAffinity()
+                                        }
                                         /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
                                         Toast.makeText(context,"Error: El usuario $email , ya existe",Toast.LENGTH_SHORT).show()

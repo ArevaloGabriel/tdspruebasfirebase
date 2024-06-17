@@ -5,14 +5,12 @@ import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -39,14 +37,12 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Alignment.Companion.BottomStart
 import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -55,7 +51,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
-import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.google.firebase.firestore.FirebaseFirestore
@@ -83,20 +78,15 @@ class HomeActivity : ComponentActivity() {
                 if (botonBorrar) {
                     this.botonBorrarVisible = true
                 }
-
             }
-
         }
-
         Firebase.remoteConfig.fetchAndActivate().addOnCompleteListener { task ->
             if (task.isSuccessful) {
                 val botonCrash = Firebase.remoteConfig.getBoolean("boton_crash")
                 if (botonCrash) {
                     this.botonCrashVisible = true
                 }
-
             }
-
         }
         setContent {
 
@@ -145,38 +135,7 @@ class HomeActivity : ComponentActivity() {
                         val id = document.id
                         notes.add(Note(id, text, month, day))
                     }
-                    // Verifica las notas para el día actual
-                    val today = LocalDate.now()
 
-                    for (nota in notes) {
-                        try {
-                            val noteMonth = Month.valueOf(nota.month.uppercase())
-                            val noteDate = LocalDate.of(today.year, noteMonth, nota.day.toInt())
-                            if (noteDate.isEqual(today)) {
-
-
-                                val analytics = FirebaseAnalytics.getInstance(context)
-                                val bundle = Bundle().apply {
-                                    putString(FirebaseAnalytics.Param.ITEM_ID, "nota Para Hoy")
-                                    putString(FirebaseAnalytics.Param.ITEM_NAME, "nota Para Hoy")
-                                    putString(FirebaseAnalytics.Param.CONTENT_TYPE, "nota")
-                                }
-                                analytics.logEvent("notas_Para_HOY", bundle)
-
-                                // Agregar logs para verificar
-                                Log.d(
-                                    "FirebaseAnalytics",
-                                    "Event 'notaParaHOY' logged with bundle: $bundle"
-                                )
-
-                                Toast.makeText(context, "tienes una nota", Toast.LENGTH_SHORT)
-                                    .show()
-                            }
-                        } catch (e: Exception) {
-                            Log.e("NotesActivityScreen", "Error al verificar la nota: ${e.message}")
-                            e.printStackTrace()
-                        }
-                    }
                 } else {
                     Log.d("NotesActivityScreen", "querySnapshot es nulo")
                 }
@@ -189,6 +148,7 @@ class HomeActivity : ComponentActivity() {
                             horizontalArrangement = Arrangement.Start,
                             modifier = Modifier.padding(end = 20.dp)
                         ) {
+
                             /* * * * *  * * * * * * * * *  **  * * * *
                             * REMOTE CONFIG
                             * PARA PODER VER EL BOTON DE BORRAR NOTAAS O NO DE
@@ -221,11 +181,11 @@ class HomeActivity : ComponentActivity() {
                             Spacer(modifier = Modifier.padding(end = 180.dp))
                             FloatingActionButton(
                                 onClick = {
-                                    /*ME LLEVA A LA PANTALLA DE MES , PARA PODER ELEGIR */
+
                                     val intent =
                                         Intent(context, MonthsActivity::class.java).apply { }
                                     context.startActivity(intent)
-                                    /* * *  **  * * * * * * * *  * * * **/
+
                                 },
                                 modifier = Modifier.padding(16.dp),
                                 shape = CircleShape,
