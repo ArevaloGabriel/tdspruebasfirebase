@@ -12,7 +12,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -39,14 +38,12 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Alignment.Companion.BottomStart
 import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -136,6 +133,7 @@ class HomeActivity : ComponentActivity() {
                         .await()
                 }
                 notes.clear()
+                val analytics = FirebaseAnalytics.getInstance(context)
 
                 if (querySnapshot != null) {
                     for (document in querySnapshot.documents) {
@@ -148,19 +146,24 @@ class HomeActivity : ComponentActivity() {
                     // Verifica las notas para el día actual
                     val today = LocalDate.now()
 
+                    analytics.setUserProperty("fechaActual", today.toString())
+
+                    // UserProperty para la cantidad de notas
+                    val notesSize = notes.size
+                    analytics.setUserProperty("cantidadNotas", notesSize.toString())
+
                     for (nota in notes) {
                         try {
                             val noteMonth = Month.valueOf(nota.month.uppercase())
                             val noteDate = LocalDate.of(today.year, noteMonth, nota.day.toInt())
                             if (noteDate.isEqual(today)) {
 
-
-                                val analytics = FirebaseAnalytics.getInstance(context)
                                 val bundle = Bundle().apply {
                                     putString(FirebaseAnalytics.Param.ITEM_ID, "nota Para Hoy")
                                     putString(FirebaseAnalytics.Param.ITEM_NAME, "nota Para Hoy")
                                     putString(FirebaseAnalytics.Param.CONTENT_TYPE, "nota")
                                 }
+
                                 analytics.logEvent("notas_Para_HOY", bundle)
 
                                 // Agregar logs para verificar
@@ -171,6 +174,10 @@ class HomeActivity : ComponentActivity() {
 
                                 Toast.makeText(context, "tienes una nota", Toast.LENGTH_SHORT)
                                     .show()
+                            }
+                            // user property si hay una nota vencida
+                            if(noteDate.isBefore(today)){
+                                analytics.setUserProperty("notaVencida", "true")
                             }
                         } catch (e: Exception) {
                             Log.e("NotesActivityScreen", "Error al verificar la nota: ${e.message}")
@@ -204,7 +211,7 @@ class HomeActivity : ComponentActivity() {
                                         if (notes.isNotEmpty()) {
                                             val noteId =
                                                 notes[0].id // Borrar la primera nota como ejemplo
-                                            val userName = currentUser?.email
+                                            val userName = currentUser.email
                                             DeletteNoteFromFirestore(userName.toString(), noteId)
 
                                             notes.removeAt(0) // Actualiza la lista local
