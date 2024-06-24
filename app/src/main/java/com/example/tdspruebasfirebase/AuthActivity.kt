@@ -209,19 +209,9 @@ class AuthActivity : ComponentActivity() {
                                                        /* CRASHLYTICS 1*/
                                         /*CREO UN CRASH SI TRATA DE REGISTRARSE CON UN USUARIO REGISTRADO*/
 
-                                        try {
-                                                         // Simulamos un error crítico
-                                            throw Exception("Intento registrarse con usuario registrado")
-                                        } catch (e: Exception) {
-
-                                            val firebaseCrashlytics = FirebaseCrashlytics.getInstance()
-                                            firebaseCrashlytics.log("Intento registrarse con usuario registrado")
-                                            firebaseCrashlytics.recordException(e)
-                                            Log.d("crashlytics", "Intento registrarse con usuario registrado")
-
-                                            // Forzar el cierre de la aplicación
-                                            finishAffinity()
-                                        }
+                                        val crashlytics = FirebaseCrashlytics.getInstance()
+                                        crashlytics.log("Error forzado por intentar registrar un usuario autenticado")
+                                        throw RuntimeException("Este es un error forzado por intentar registrar un usuario autenticado")
                                         /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
                                         Toast.makeText(context,"Error: El usuario $email , ya existe",Toast.LENGTH_SHORT).show()
