@@ -36,12 +36,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.os.bundleOf
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.analytics.ktx.analytics
 import com.google.firebase.analytics.logEvent
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.google.firebase.ktx.Firebase
 import java.time.Month
 import java.time.Year
@@ -82,22 +80,6 @@ class MonthsActivity : ComponentActivity() {
     }
 
     @Composable
-    fun CrashButton() {
-        Button(
-            onClick = {
-                // Aquí forzamos un fallo
-                val crashlytics = FirebaseCrashlytics.getInstance()
-                crashlytics.log("Simulando un fallo")
-                crashlytics.recordException(Exception("¡Este es un crash de prueba!"))
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Text("Simular Crash")
-        }
-    }
-    @Composable
     fun MonthlyPlanner(onMonthSelected: (Month) -> Unit) {
         val months = getMonthInYear()
         Column (horizontalAlignment = Alignment.CenterHorizontally,
@@ -134,8 +116,6 @@ class MonthsActivity : ComponentActivity() {
                     param("Mes", month.name)
                     param("usuario", auth.currentUser?.email.toString())
                }
-
-
                 },
             modifier = Modifier
                 .padding(8.dp)

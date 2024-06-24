@@ -76,6 +76,7 @@ dependencies {
     implementation("com.google.firebase:firebase-analytics")
     implementation(libs.firebase.crashlytics)
    implementation("com.google.firebase:firebase-auth:23.0.0")
+    implementation ("com.google.android.gms:play-services-auth:21.2.0")
     implementation ("com.google.firebase:firebase-firestore-ktx")
     implementation(libs.firebase.inappmessaging.display)
     implementation ("com.google.firebase:firebase-messaging")

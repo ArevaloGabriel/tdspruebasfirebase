@@ -39,10 +39,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
-import com.google.firebase.analytics.FirebaseAnalytics
-import com.google.firebase.analytics.ktx.analytics
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.google.firebase.crashlytics.ktx.crashlytics
 import com.google.firebase.firestore.FirebaseFirestore
@@ -207,13 +204,14 @@ class AuthActivity : ComponentActivity() {
                                             Toast.LENGTH_SHORT
                                         ).show()
                                     } else {
+
+
                                                        /* CRASHLYTICS 1*/
                                         /*CREO UN CRASH SI TRATA DE REGISTRARSE CON UN USUARIO REGISTRADO*/
 
-                                        firebaseCrashlytics = FirebaseCrashlytics.getInstance()
-                                        firebaseCrashlytics.log("Intento registrarse con usuario registrado")
-                                        firebaseCrashlytics.recordException(Exception("Intento registrarse con usuario registrado"))
-                                      Log.d("crashlytics","Intento registrarse con usuario registrado")
+                                        val crashlytics = FirebaseCrashlytics.getInstance()
+                                        crashlytics.log("Error forzado por intentar registrar un usuario autenticado")
+                                        throw RuntimeException("Este es un error forzado por intentar registrar un usuario autenticado")
                                         /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
                                         Toast.makeText(context,"Error: El usuario $email , ya existe",Toast.LENGTH_SHORT).show()

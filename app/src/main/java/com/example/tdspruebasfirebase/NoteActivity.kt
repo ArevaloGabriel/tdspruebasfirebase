@@ -9,7 +9,6 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -20,23 +19,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -46,27 +41,23 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
-import com.example.tdspruebasfirebase.ui.theme.TdspruebasfirebaseTheme
+import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.analytics.ktx.analytics
+import com.google.firebase.analytics.logEvent
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.google.firebase.crashlytics.ktx.crashlytics
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.ktx.Firebase
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
-import kotlinx.coroutines.withContext
 import java.time.Month
 
 
 class NoteActivity : ComponentActivity() {
 
     private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
+    private lateinit var firebaseAnalytics: FirebaseAnalytics
     private lateinit var firebaseCrashlytics:FirebaseCrashlytics
     lateinit var month: String
     lateinit var day :String
@@ -76,6 +67,7 @@ class NoteActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
 
         super.onCreate(savedInstanceState)
+        firebaseAnalytics = Firebase.analytics
         firebaseCrashlytics = Firebase.crashlytics
         month = intent.getStringExtra("mes") ?: ""
       day = intent.getIntExtra("dia",0).toString()
@@ -136,27 +128,19 @@ Column {
                     val texto = textState
                     val mes = month
                     val dia = day
-                    var id :Long = 1
-                    val fecha=  MonthValueToInt(mes.toString())
+                    val fecha=  MonthValueToInt(mes)
 
 
                     if (texto.isEmpty()) {
 
-                          /* CRASHLYTICS 2*/
-                        /*CREO UN CRASH SI TRATA DE GUARDAR UNA NOTA VACIA*/
+                        firebaseAnalytics.logEvent("Intento_guardar_una_nota_vacia"){}
 
-                        firebaseCrashlytics = FirebaseCrashlytics.getInstance()
-                        firebaseCrashlytics.log("Intento guardar una nota vacia")
-                        firebaseCrashlytics.recordException(Exception("Intento guardar una nota vacia"))
-                        /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
                         Toast.makeText(context, "La nota no puede estar vacía", Toast.LENGTH_SHORT).show()
                     } else {
                             /*GUARDAR LA NOTA EN FIRESTORE*/
-                        lifecycleScope.launch {
-                            id= getNextId()
-                        }
-                            saveNoteToFirebase(context, texto, mes, dia, fecha,id)
+
+                            saveNoteToFirebase(context, texto, mes, dia, fecha)
 
                         Toast.makeText(context, "Nota guardada correctamente", Toast.LENGTH_SHORT)
                             .show()
@@ -216,31 +200,8 @@ Column {
         }
 
     }
-    suspend fun getNextId(): Long {
-        var id :Long=0
-        val auth = FirebaseAuth.getInstance()
-        val currentUser = auth.currentUser
-        val userId = currentUser?.email
-        val listId = mutableStateListOf<Long>()
-        lifecycleScope.launch {
-            val querySnapshot = userId?.let {
-                FirebaseFirestore.getInstance()
-                    .collection("Usuarios con Notas").document(it).collection("Notas")
-                    .get()
-                    .await()
-            }
-            if (querySnapshot != null) {
-                for (document in querySnapshot.documents) {
-                     id = document.getLong("notaID") ?: 0
-                   id+1
-                }
-            }
-        }
-        return id
-    }
 
-
-    fun saveNoteToFirebase(context: Context, texto: String, month: String, day: String,date :Int,noteId:Long) {
+    fun saveNoteToFirebase(context: Context, texto: String, month: String, day: String,date :Int) {
         val db = FirebaseFirestore.getInstance()
         val auth = FirebaseAuth.getInstance()
         val currentUser = auth.currentUser
@@ -252,7 +213,6 @@ Column {
                 "dia" to day,
                 "fecha" to date,
                 "userId" to userId,
-                "notaID" to noteId
             )
                                     /* CLOUD FIRESTORE */
                          /* ACA SE ALMACENA LA NOTA EN FIREBASE */
