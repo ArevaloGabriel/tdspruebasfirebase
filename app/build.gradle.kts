@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.android)
     id("com.google.gms.google-services")
     alias(libs.plugins.google.firebase.crashlytics)
+    id("com.google.firebase.firebase-perf")
 }
 
 android {
@@ -81,4 +82,5 @@ dependencies {
     implementation(libs.firebase.inappmessaging.display)
     implementation ("com.google.firebase:firebase-messaging")
     implementation ("com.google.firebase:firebase-config-ktx")
+    implementation("com.google.firebase:firebase-perf-ktx")
 }
