@@ -121,7 +121,7 @@ class HomeActivity : ComponentActivity() {
             Text("Usuario no autenticado")
         } else {
             val userId = currentUser.email
-
+            val analytics = FirebaseAnalytics.getInstance(context)
             val notes = remember { mutableStateListOf<Note>() }
 
             /*ACA SE REALIZA LAS CONSULTAS A LA BASE DE DATOS DE FIREBASE PARA RECUPERAR LAS NOTAS */
@@ -135,11 +135,8 @@ class HomeActivity : ComponentActivity() {
                 }
                 notes.clear()
 
-                val analytics = FirebaseAnalytics.getInstance(context)
-
-                // user property cantidad de notas
-                val notesSize = notes.size.toString()
-                analytics.setUserProperty("count_notes", notesSize)
+                var tieneNotaVencida = false
+                var tieneNotaHoy = false
 
                 if (querySnapshot != null) {
                     for (document in querySnapshot.documents) {
@@ -149,6 +146,7 @@ class HomeActivity : ComponentActivity() {
                         val id = document.id
                         notes.add(Note(id, text, month, day))
                     }
+
                     // Verifica las notas para el día actual
                     val today = LocalDate.now()
 
@@ -162,6 +160,8 @@ class HomeActivity : ComponentActivity() {
                                     putString(FirebaseAnalytics.Param.ITEM_NAME, "nota Para Hoy")
                                     putString(FirebaseAnalytics.Param.CONTENT_TYPE, "nota")
                                 }
+                                tieneNotaHoy = true
+
                                 analytics.logEvent("notas_Para_HOY", bundle)
 
                                 // Agregar logs para verificar
@@ -174,15 +174,21 @@ class HomeActivity : ComponentActivity() {
                                     .show()
                             }
 
-                            // user property nota vencida
+                            // verifica si hay alguna nota vencida
                             if(noteDate.isBefore(today)){
-                                analytics.setUserProperty("nota_vencida", "true")
+                                tieneNotaVencida = true
                             }
                         } catch (e: Exception) {
                             Log.e("NotesActivityScreen", "Error al verificar la nota: ${e.message}")
                             e.printStackTrace()
                         }
                     }
+
+                    // User property si el usuario tiene alguna nota vencida
+                    analytics.setUserProperty("tiene_nota_vencida", tieneNotaVencida.toString())
+
+                    // User property si el usuario tiene notas para hoy
+                    analytics.setUserProperty("tiene_nota_hoy", tieneNotaHoy.toString())
                 } else {
                     Log.d("NotesActivityScreen", "querySnapshot es nulo")
                 }
